@@ -1,6 +1,7 @@
 Kajetan Wójcik 333590
 Python
 https://github.com/Jukamapi/Ochrona-danych
+commit 64f794fcb38bfaf1f0864c7ecce7ced64771f215
 
 Zad1:
 
