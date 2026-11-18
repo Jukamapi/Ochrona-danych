@@ -1,0 +1,201 @@
+@app.route("/sekret")
+def sekret():
+    klucz = request.args.get("klucz", "")
+    zapytanie = "SELECT wlasciciel, sekret FROM sekrety WHERE klucz = '" + klucz + "'"
+    wiersze, blad = [], None
+    try:
+        with sqlite3.connect(BAZA, uri=True) as db:
+            wiersze = db.execute(zapytanie).fetchall()
+    except sqlite3.Error as exc:
+        blad = f"{type(exc).__name__}: {exc}"
+    return render_template("sekret.html", klucz=klucz, zapytanie=zapytanie, wiersze=wiersze, blad=blad)
+
+
+
+
+OperationalError: unrecognized token: "'''"
+
+
+
+
+' OR '1'='1
+
+anna: Hello world
+piotr: Top secret
+muszkieter: Jeden za wszystkich
+admin: Szyfr do sejfu: 7319 (fikcyjny)
+
+
+
+' UNION SELECT name, sql FROM sqlite_master WHERE type='table'--
+konta: CREATE TABLE konta(login TEXT, rola TEXT, email TEXT)
+sekrety: CREATE TABLE sekrety(klucz TEXT, wlasciciel TEXT, sekret TEXT)
+
+
+
+SELECT wlasciciel, sekret FROM sekrety WHERE klucz = '' UNION SELECT klucz, wlasciciel FROM sekrety--'
+1234: anna
+K7-ZQ19: admin
+d'Artagnan: muszkieter
+qwerty: piotr
+
+
+
+' UNION SELECT count(*), 'x' FROM sqlite_master--
+2: x
+
+
+============================================================
+
+
+@app.route("/sekret")
+def sekret():
+    klucz = request.args.get("klucz", "")
+    zapytanie = "SELECT wlasciciel, sekret FROM sekrety WHERE klucz = ?"
+    wiersze, blad = [], None
+    try:
+        with sqlite3.connect(BAZA, uri=True) as db:
+            wiersze = db.execute(zapytanie, (klucz,)).fetchall()
+    except sqlite3.Error:
+        app.logger.exception("Błąd zapytania do sekretów (klucz=%r)", klucz)
+        blad = "Wystąpił błąd podczas wykonywania zapytania."
+    return render_template("sekret.html", klucz=klucz, zapytanie=zapytanie, wiersze=wiersze, blad=blad)
+
+
+
+
+
+d'Artagnan
+muszkieter: Jeden za wszystkich
+
+
+
+==========================================================================
+
+
+
+@app.route("/kalkulator")
+def kalkulator():
+    wyrazenie = request.args.get("wyrazenie", "")
+    wynik = None
+    if wyrazenie:
+        try:
+            wynik = eval(wyrazenie)
+        except Exception as exc:
+            wynik = f"Błąd: {exc}"
+    return render_template("kalkulator.html", wyrazenie=wyrazenie, wynik=wynik)
+
+
+
+
+__import__('os').listdir('/etc')
+Wynik: ['modules-load.d', 'mtab', 'hosts', 'crontabs', 'fstab', 'services', 'profile.d', 'securetty', 'periodic', 'modules', 'apk', 'protocols', 'nsswitch.conf', 'logrotate.d', 'secfixes.d', 'shells', 'ssl1.1', 'motd', 'group', 'shadow', 'udhcpc', 'sysctl.conf', 'opt', 'sysctl.d', 'ssl', 'passwd', 'inittab', 'issue', 'alpine-release', 'busybox-paths.d', 'hostname', 'modprobe.d', 'profile', 'network', 'os-release', 'resolv.conf', 'passwd-', 'shadow-', 'group-', 'terminfo', 'bindresvport.blacklist', 'krb5.conf', 'netconfig', 'inputrc', 'ca-certificates', 'ca-certificates.conf']
+
+
+
+
+open('/etc/os-release').read()
+Wynik: NAME="Alpine Linux" ID=alpine VERSION_ID=3.24.4 PRETTY_NAME="Alpine Linux v3.24" HOME_URL="https://alpinelinux.org/" BUG_REPORT_URL="https://gitlab.alpinelinux.org/alpine/aports/-/issues" 
+
+
+
+__import__('os').getuid()
+Wynik: 1000
+
+
+
+
+
+
+
+import re
+
+WZORZEC = re.compile(
+    r'^\s*(-?\d+(?:\.\d+)?)\s*([+\-*/])\s*(-?\d+(?:\.\d+)?)\s*$'
+)
+
+def oblicz(wyrazenie: str) -> float:
+    if len(wyrazenie) > 100:
+        raise ValueError("wyrażenie zbyt długie")
+
+    dopasowanie = WZORZEC.match(wyrazenie)
+    if not dopasowanie:
+        raise ValueError("niepoprawny format wyrażenia")
+
+    a_str, operator, b_str = dopasowanie.groups()
+    a = float(a_str)
+    b = float(b_str)
+
+    if operator == '+':
+        return a + b
+    elif operator == '-':
+        return a - b
+    elif operator == '*':
+        return a * b
+    elif operator == '/':
+        if b == 0:
+            raise ZeroDivisionError("dzielenie przez zero")
+        return a / b
+
+
+@app.route("/kalkulator")
+def kalkulator():
+    wyrazenie = request.args.get("wyrazenie")
+
+    if wyrazenie is None:
+        return render_template("kalkulator.html", wyrazenie=None, wynik=None)
+
+    if wyrazenie == "":
+        app.logger.warning("Puste wyrażenie")
+        return render_template(
+            "kalkulator.html", wyrazenie=wyrazenie, wynik="Błąd: puste wyrażenie"
+        ), 400
+
+    try:
+        wynik = oblicz(wyrazenie)
+        return render_template("kalkulator.html", wyrazenie=wyrazenie, wynik=wynik)
+    except (ValueError, ZeroDivisionError) as exc:
+        app.logger.warning("Błędne wyrażenie %r: %s", wyrazenie, exc)
+        return render_template(
+            "kalkulator.html", wyrazenie=wyrazenie, wynik=f"Błąd: {exc}"
+        ), 400
+
+
+
+
+
+2+3
+Wynik: 5.0
+200
+
+7/2
+Wynik: 3.5
+200
+
+-1.5*4
+Wynik: -6.0
+200
+
+1/0
+Wynik: Błąd: dzielenie przez zero
+400
+
+__import__('os').listdir('/etc')
+Wynik: Błąd: niepoprawny format wyrażenia
+400
+
+open('/etc/os-release').read()
+Wynik: Błąd: niepoprawny format wyrażenia
+400
+
+__import__('os').getuid()
+Wynik: Błąd: niepoprawny format wyrażenia
+400
+
+[puste wejście]
+Wynik: Błąd: puste wyrażenie
+400
+
+
+
+
